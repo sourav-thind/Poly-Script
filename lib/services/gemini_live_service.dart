@@ -36,10 +36,12 @@ class GeminiLiveService {
   });
 
   /// Model used to transcribe and translate audio.
-  static const String modelTranscribe = 'gemini-3.5-transcribe';
+  static const String modelTranscribe =
+      'models/gemini-3.5-transcribe-live-preview';
 
   /// Alternative model that performs live translation directly.
-  static const String modelLiveTranslate = 'gemini-3.5-live-translate-preview';
+  static const String modelLiveTranslate =
+      'models/gemini-3.5-live-translate-preview';
 
   static const String _host =
       'wss://generativelanguage.googleapis.com';
