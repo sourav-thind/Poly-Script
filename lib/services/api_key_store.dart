@@ -1,46 +1,56 @@
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
-/// Persists the user's Gemini API key and related preferences locally using
-/// encrypted platform storage (Windows Credential Manager / DPAPI on Windows).
+/// Persists the user's Gemini API key and related preferences locally.
 ///
 /// Values survive app restarts and are scoped to the current OS user.
+///
+/// Note: this uses `shared_preferences`, which stores values as plain text in
+/// the app's local data folder. If the key needs to be encrypted at rest, swap
+/// this implementation for platform secure storage (e.g. Windows Credential
+/// Manager via DPAPI), which requires the Visual C++ ATL build component.
 class ApiKeyStore {
-  ApiKeyStore({FlutterSecureStorage? storage})
-      : _storage = storage ?? const FlutterSecureStorage();
+  ApiKeyStore({Future<SharedPreferences> Function()? preferencesLoader})
+      : _loadPreferences = preferencesLoader ?? SharedPreferences.getInstance;
 
   static const String _apiKeyKey = 'gemini_api_key';
   static const String _includeMicKey = 'include_microphone';
 
-  final FlutterSecureStorage _storage;
+  final Future<SharedPreferences> Function() _loadPreferences;
 
   /// Returns the stored API key, or `null` when none has been saved.
   Future<String?> readKey() async {
-    final value = await _storage.read(key: _apiKeyKey);
+    final preferences = await _loadPreferences();
+    final value = preferences.getString(_apiKeyKey);
     final trimmed = value?.trim();
     return (trimmed == null || trimmed.isEmpty) ? null : trimmed;
   }
 
   /// Saves [key]. Empty values are treated as a removal.
   Future<void> saveKey(String key) async {
+    final preferences = await _loadPreferences();
     final trimmed = key.trim();
     if (trimmed.isEmpty) {
-      await clearKey();
+      await preferences.remove(_apiKeyKey);
       return;
     }
-    await _storage.write(key: _apiKeyKey, value: trimmed);
+    await preferences.setString(_apiKeyKey, trimmed);
   }
 
   /// Removes the stored API key.
-  Future<void> clearKey() => _storage.delete(key: _apiKeyKey);
+  Future<void> clearKey() async {
+    final preferences = await _loadPreferences();
+    await preferences.remove(_apiKeyKey);
+  }
 
   /// Whether microphone audio should be captured alongside system audio.
   Future<bool> readIncludeMicrophone() async {
-    final value = await _storage.read(key: _includeMicKey);
-    return value == 'true';
+    final preferences = await _loadPreferences();
+    return preferences.getBool(_includeMicKey) ?? false;
   }
 
   /// Persists the microphone preference.
-  Future<void> setIncludeMicrophone(bool include) {
-    return _storage.write(key: _includeMicKey, value: include ? 'true' : 'false');
+  Future<void> setIncludeMicrophone(bool include) async {
+    final preferences = await _loadPreferences();
+    await preferences.setBool(_includeMicKey, include);
   }
 }
