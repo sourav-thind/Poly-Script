@@ -107,8 +107,9 @@ class _SubtitleOverlayState extends State<SubtitleOverlay> {
       key = null;
     }
 
+    if (!mounted) return;
+
     if (key == null) {
-      if (!mounted) return;
       setState(() {
         _isSettingsOpen = true;
         _errorMessage = 'Add your Gemini API key in Settings.';
