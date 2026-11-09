@@ -5,10 +5,8 @@ import 'package:poly_cript/services/api_key_store.dart';
 import 'package:poly_cript/widgets/subtitle_overlay.dart';
 
 class _FakeApiKeyStore extends ApiKeyStore {
-  _FakeApiKeyStore({this.key, this.includeMic = false});
-
   String? key;
-  bool includeMic;
+  bool includeMic = false;
 
   @override
   Future<String?> readKey() async => key;
@@ -69,10 +67,10 @@ void main() {
     expect(find.text('IDLE'), findsOneWidget);
   });
 
-  testWidgets('toggling microphone preference is persisted', (
+  testWidgets('toggling microphone preference is persisted with the key', (
     WidgetTester tester,
   ) async {
-    final store = _FakeApiKeyStore(key: 'saved-key');
+    final store = _FakeApiKeyStore();
 
     await tester.pumpWidget(
       MaterialApp(home: SubtitleOverlay(keyStore: store)),
@@ -82,10 +80,12 @@ void main() {
     await tester.tap(find.byTooltip('Settings'));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Include microphone'));
+    await tester.enterText(find.byType(TextField), 'saved-key');
+    await tester.tap(find.byType(Checkbox));
     await tester.tap(find.text('Save'));
     await tester.pumpAndSettle();
 
+    expect(store.key, 'saved-key');
     expect(store.includeMic, isTrue);
   });
 }
