@@ -389,7 +389,7 @@ class _DragHandle extends StatelessWidget {
   }
 }
 
-class _SubtitleText extends StatelessWidget {
+class _SubtitleText extends StatefulWidget {
   const _SubtitleText({
     required this.statusLabel,
     required this.statusColor,
@@ -401,6 +401,55 @@ class _SubtitleText extends StatelessWidget {
   final Color statusColor;
   final String message;
   final bool isError;
+
+  @override
+  State<_SubtitleText> createState() => _SubtitleTextState();
+}
+
+class _SubtitleTextState extends State<_SubtitleText> {
+  static const double _lineHeight = 18 * 1.25;
+  static const double _visibleLines = 2;
+
+  final ScrollController _scrollController = ScrollController();
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollToEnd();
+  }
+
+  @override
+  void didUpdateWidget(_SubtitleText oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.message != widget.message) {
+      _scrollToEnd(
+        animate:
+            oldWidget.message.isNotEmpty && widget.message.isNotEmpty,
+      );
+    }
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _scrollToEnd({bool animate = false}) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_scrollController.hasClients) return;
+      final target = _scrollController.position.maxScrollExtent;
+      if (!animate) {
+        _scrollController.jumpTo(target);
+        return;
+      }
+      _scrollController.animateTo(
+        target,
+        duration: const Duration(milliseconds: 220),
+        curve: Curves.easeOut,
+      );
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -415,13 +464,13 @@ class _SubtitleText extends StatelessWidget {
               width: 8,
               height: 8,
               decoration: BoxDecoration(
-                color: statusColor,
+                color: widget.statusColor,
                 shape: BoxShape.circle,
               ),
             ),
             const SizedBox(width: 8),
             Text(
-              statusLabel,
+              widget.statusLabel,
               style: TextStyle(
                 color: Colors.white.withOpacity(0.7),
                 fontSize: 11,
@@ -432,15 +481,23 @@ class _SubtitleText extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 6),
-        Text(
-          message,
-          maxLines: 2,
-          overflow: TextOverflow.ellipsis,
-          style: TextStyle(
-            color: isError ? const Color(0xFFFF8A80) : Colors.white,
-            fontSize: 18,
-            fontWeight: FontWeight.w500,
-            height: 1.25,
+        ConstrainedBox(
+          constraints: const BoxConstraints(
+            maxHeight: _lineHeight * _visibleLines,
+          ),
+          child: SingleChildScrollView(
+            controller: _scrollController,
+            child: Text(
+              widget.message,
+              style: TextStyle(
+                color: widget.isError
+                    ? const Color(0xFFFF8A80)
+                    : Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.w500,
+                height: 1.25,
+              ),
+            ),
           ),
         ),
       ],
