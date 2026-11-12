@@ -98,6 +98,7 @@ void main() {
     expect(store.key, 'test-api-key');
     expect(find.text('Gemini API Key'), findsNothing);
     expect(find.text('STARTING'), findsOneWidget);
+    expect(find.text('MONO MODE'), findsOneWidget);
   });
 
   testWidgets('toggling microphone preference is persisted with the key', (
@@ -154,5 +155,6 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(store.showTranslation, isTrue);
+    expect(find.text('T-MODE'), findsOneWidget);
   });
 }

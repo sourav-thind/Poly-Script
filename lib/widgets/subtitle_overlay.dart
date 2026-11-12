@@ -327,46 +327,90 @@ class _SubtitleOverlayState extends State<SubtitleOverlay> {
 
     return Scaffold(
       backgroundColor: Colors.transparent,
-      body: Center(
-        child: Container(
-          margin: const EdgeInsets.all(12),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-          decoration: BoxDecoration(
-            color: Colors.black.withOpacity(0.75),
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: Colors.white.withOpacity(0.08)),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.35),
-                blurRadius: 24,
-                offset: const Offset(0, 8),
+      body: Stack(
+        children: [
+          Center(
+            child: Container(
+              margin: const EdgeInsets.all(12),
+              padding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 14,
               ),
-            ],
+              decoration: BoxDecoration(
+                color: Colors.black.withOpacity(0.75),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: Colors.white.withOpacity(0.08)),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.35),
+                    blurRadius: 24,
+                    offset: const Offset(0, 8),
+                  ),
+                ],
+              ),
+              child: Row(
+                children: [
+                  const _DragHandle(),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: _SubtitleText(
+                      statusLabel: _statusLabel,
+                      statusColor: _statusColor,
+                      message: _message,
+                      isError: _messageIsError,
+                    ),
+                  ),
+                  const SizedBox(width: 14),
+                  IconButton(
+                    tooltip: 'Settings',
+                    onPressed: () => unawaited(_openSettings()),
+                    icon: const Icon(
+                      Icons.settings,
+                      size: 20,
+                      color: Colors.white70,
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
-          child: Row(
-            children: [
-              const _DragHandle(),
-              const SizedBox(width: 14),
-              Expanded(
-                child: _SubtitleText(
-                  statusLabel: _statusLabel,
-                  statusColor: _statusColor,
-                  message: _message,
-                  isError: _messageIsError,
-                ),
-              ),
-              const SizedBox(width: 14),
-              IconButton(
-                tooltip: 'Settings',
-                onPressed: () => unawaited(_openSettings()),
-                icon: const Icon(
-                  Icons.settings,
-                  size: 20,
-                  color: Colors.white70,
-                ),
-              ),
-            ],
+          Positioned(
+            top: 8,
+            left: 14,
+            child: _ModeBadge(showTranslation: _showTranslation),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Small indicator in the top-left corner describing the current output mode.
+class _ModeBadge extends StatelessWidget {
+  const _ModeBadge({required this.showTranslation});
+
+  final bool showTranslation;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = showTranslation
+        ? const Color(0xFF34C759)
+        : Colors.white.withOpacity(0.65);
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: Colors.black.withOpacity(0.55),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: color.withOpacity(0.45)),
+      ),
+      child: Text(
+        showTranslation ? 'T-MODE' : 'MONO MODE',
+        style: TextStyle(
+          color: color,
+          fontSize: 10,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 1.1,
         ),
       ),
     );
