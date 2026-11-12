@@ -11,6 +11,7 @@ class SettingsPanel extends StatefulWidget {
     super.key,
     required this.hasSavedKey,
     required this.includeMicrophone,
+    required this.showTranslation,
     required this.onSave,
     required this.onRemove,
     required this.onCancel,
@@ -22,9 +23,16 @@ class SettingsPanel extends StatefulWidget {
   /// Whether microphone audio is currently enabled.
   final bool includeMicrophone;
 
-  /// Called with a new key (or `null` to keep the existing one) and the mic
-  /// preference.
-  final void Function(String? apiKey, bool includeMicrophone) onSave;
+  /// Whether translated text should be shown instead of the transcription.
+  final bool showTranslation;
+
+  /// Called with a new key (or `null` to keep the existing one), the mic
+  /// preference and the translation preference.
+  final void Function(
+    String? apiKey,
+    bool includeMicrophone,
+    bool showTranslation,
+  ) onSave;
 
   /// Called when the user removes the stored key.
   final VoidCallback onRemove;
@@ -40,6 +48,7 @@ class _SettingsPanelState extends State<SettingsPanel> {
   final TextEditingController _controller = TextEditingController();
   bool _obscure = true;
   late bool _includeMic = widget.includeMicrophone;
+  late bool _showTranslation = widget.showTranslation;
 
   @override
   void initState() {
@@ -62,7 +71,11 @@ class _SettingsPanelState extends State<SettingsPanel> {
   void _save() {
     if (!_canSave) return;
     final trimmed = _controller.text.trim();
-    widget.onSave(trimmed.isEmpty ? null : trimmed, _includeMic);
+    widget.onSave(
+      trimmed.isEmpty ? null : trimmed,
+      _includeMic,
+      _showTranslation,
+    );
   }
 
   @override
@@ -99,9 +112,18 @@ class _SettingsPanelState extends State<SettingsPanel> {
                 ),
               ),
               const SizedBox(width: 16),
-              _MicToggle(
+              _PanelToggle(
+                checkboxKey: const ValueKey('include-microphone-toggle'),
+                label: 'Include microphone',
                 value: _includeMic,
                 onChanged: (value) => setState(() => _includeMic = value),
+              ),
+              const SizedBox(width: 12),
+              _PanelToggle(
+                checkboxKey: const ValueKey('show-translation-toggle'),
+                label: 'Show translation',
+                value: _showTranslation,
+                onChanged: (value) => setState(() => _showTranslation = value),
               ),
               const Spacer(),
               Text(
@@ -186,9 +208,16 @@ class _SettingsPanelState extends State<SettingsPanel> {
   }
 }
 
-class _MicToggle extends StatelessWidget {
-  const _MicToggle({required this.value, required this.onChanged});
+class _PanelToggle extends StatelessWidget {
+  const _PanelToggle({
+    required this.checkboxKey,
+    required this.label,
+    required this.value,
+    required this.onChanged,
+  });
 
+  final Key checkboxKey;
+  final String label;
   final bool value;
   final ValueChanged<bool> onChanged;
 
@@ -206,6 +235,7 @@ class _MicToggle extends StatelessWidget {
               width: 20,
               height: 20,
               child: Checkbox(
+                key: checkboxKey,
                 value: value,
                 onChanged: (checked) => onChanged(checked ?? false),
                 activeColor: const Color(0xFF34C759),
@@ -217,7 +247,7 @@ class _MicToggle extends StatelessWidget {
             ),
             const SizedBox(width: 6),
             Text(
-              'Include microphone',
+              label,
               style: TextStyle(
                 color: Colors.white.withOpacity(0.75),
                 fontSize: 12,
