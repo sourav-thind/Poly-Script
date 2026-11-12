@@ -31,34 +31,32 @@ enum GeminiLiveState {
 /// cleaned French subtitle text.
 class GeminiLiveService {
   GeminiLiveService({
-    this.model = modelTranscribe,
+    this.model = modelLiveTranslate,
+    this.targetLanguageCode = 'fr',
     this.connectTimeout = const Duration(seconds: 15),
   });
 
-  /// Model used to transcribe and translate audio.
+  /// Speech-to-text only model.
   static const String modelTranscribe =
-      'models/gemini-3.5-transcribe-live-preview';
+      'gemini-3.5-transcribe-live-preview';
 
-  /// Alternative model that performs live translation directly.
+  /// Model that performs live speech translation directly.
   static const String modelLiveTranslate =
-      'models/gemini-3.5-live-translate-preview';
+      'gemini-3.5-live-translate-preview';
 
   static const String _host =
       'wss://generativelanguage.googleapis.com';
   static const String _path =
-      '/ws/google.ai.generativelanguage.v1alpha.GenerativeService.BidiGenerateContent';
-
-  static const String _systemInstruction =
-      'You are a real-time subtitle translation engine. Continuously listen '
-      'to the incoming raw PCM audio in English and translate it immediately '
-      'into French text subtitles. Output ONLY the translated French text '
-      'string without markdown, conversational intro, or filler words.';
+      '/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent';
 
   static const int _maxReconnectAttempts = 5;
   static const Duration _maxBackoff = Duration(seconds: 30);
 
   /// The model identifier sent in the setup frame.
   final String model;
+
+  /// BCP-47 code of the language to translate subtitles into.
+  final String targetLanguageCode;
 
   /// How long to wait for the socket handshake before giving up.
   final Duration connectTimeout;
@@ -139,12 +137,10 @@ class GeminiLiveService {
 
     final payload = <String, dynamic>{
       'realtimeInput': {
-        'mediaChunks': [
-          {
-            'mimeType': 'audio/pcm;rate=16000',
-            'data': base64Encode(pcmData),
-          },
-        ],
+        'audio': {
+          'mimeType': 'audio/pcm;rate=16000',
+          'data': base64Encode(pcmData),
+        },
       },
     };
     channel.sink.add(jsonEncode(payload));
@@ -207,20 +203,31 @@ class GeminiLiveService {
   }
 
   void _sendSetup() {
-    final payload = <String, dynamic>{
-      'setup': {
-        'model': model.startsWith('models/') ? model : 'models/$model',
-        'systemInstruction': {
-          'parts': [
-            {'text': _systemInstruction},
-          ],
-        },
-        'generationConfig': {
-          'responseModalities': ['TEXT'],
-        },
-      },
+    final resolvedModel = model.startsWith('models/') ? model : 'models/$model';
+    final isTranslate = resolvedModel.contains('translate');
+
+    final generationConfig = <String, dynamic>{
+      'responseModalities': isTranslate ? ['AUDIO'] : ['TEXT'],
     };
-    _channel?.sink.add(jsonEncode(payload));
+
+    if (isTranslate) {
+      generationConfig['translationConfig'] = <String, dynamic>{
+        'targetLanguageCode': targetLanguageCode,
+        'echoTargetLanguage': true,
+      };
+    }
+
+    final setup = <String, dynamic>{
+      'model': resolvedModel,
+      'generationConfig': generationConfig,
+      'inputAudioTranscription': <String, dynamic>{},
+    };
+
+    if (isTranslate) {
+      setup['outputAudioTranscription'] = <String, dynamic>{};
+    }
+
+    _channel?.sink.add(jsonEncode({'setup': setup}));
   }
 
   void _handleIncoming(dynamic data) {
@@ -254,22 +261,41 @@ class GeminiLiveService {
     final serverContent = decoded['serverContent'];
     if (serverContent is! Map) return;
 
-    final modelTurn = serverContent['modelTurn'];
-    if (modelTurn is! Map) return;
+    // Prefer the translated (output) transcript, fall back to the source
+    // transcript and finally to any text parts the model returns.
+    final translated = _transcriptText(serverContent['outputTranscription']);
+    final source = _transcriptText(serverContent['inputTranscription']);
+    final modelTurnText = _modelTurnText(serverContent['modelTurn']);
 
+    final text = translated.isNotEmpty
+        ? translated
+        : (source.isNotEmpty ? source : modelTurnText);
+    if (text.isEmpty) return;
+
+    final cleaned = _cleanDisfluencies(text);
+    if (cleaned.isNotEmpty) {
+      _subtitleController.add(cleaned);
+    }
+  }
+
+  String _transcriptText(dynamic transcription) {
+    if (transcription is! Map) return '';
+    final text = transcription['text'];
+    return text is String ? text : '';
+  }
+
+  String _modelTurnText(dynamic modelTurn) {
+    if (modelTurn is! Map) return '';
     final parts = modelTurn['parts'];
-    if (parts is! List) return;
+    if (parts is! List) return '';
 
+    final buffer = StringBuffer();
     for (final part in parts) {
       if (part is! Map) continue;
       final text = part['text'];
-      if (text is! String) continue;
-
-      final cleaned = _cleanDisfluencies(text);
-      if (cleaned.isNotEmpty) {
-        _subtitleController.add(cleaned);
-      }
+      if (text is String) buffer.write(text);
     }
+    return buffer.toString();
   }
 
   void _handleSocketError(Object error) {
