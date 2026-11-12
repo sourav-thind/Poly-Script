@@ -89,9 +89,7 @@ class _SubtitleOverlayState extends State<SubtitleOverlay> {
         _hasSavedKey = key != null;
         _includeMicrophone = includeMic;
       });
-      if (key != null) {
-        await _startListening();
-      }
+      await _startListening();
     } catch (_) {
       // Storage unavailable (e.g. widget tests); stay idle.
     }
@@ -228,8 +226,8 @@ class _SubtitleOverlayState extends State<SubtitleOverlay> {
 
     if (_isListening) {
       await _stopListening();
-      await _startListening();
     }
+    await _startListening();
   }
 
   Future<void> _removeKey() async {
@@ -293,7 +291,7 @@ class _SubtitleOverlayState extends State<SubtitleOverlay> {
     if (_subtitle.isNotEmpty) return _subtitle;
     if (_errorMessage != null) return _errorMessage!;
     if (_isListening) return 'Listening for subtitles…';
-    return 'Press Start to begin listening';
+    return 'Add your Gemini API key in Settings';
   }
 
   bool get _messageIsError => _subtitle.isEmpty && _errorMessage != null;
@@ -355,22 +353,6 @@ class _SubtitleOverlayState extends State<SubtitleOverlay> {
                   size: 20,
                   color: Colors.white70,
                 ),
-              ),
-              const SizedBox(width: 4),
-              _ControlButton(
-                icon: Icons.mic,
-                label: 'Start',
-                color: const Color(0xFF34C759),
-                enabled: !_isListening,
-                onPressed: () => unawaited(_startListening()),
-              ),
-              const SizedBox(width: 8),
-              _ControlButton(
-                icon: Icons.stop,
-                label: 'Stop',
-                color: const Color(0xFFFF453A),
-                enabled: _isListening,
-                onPressed: () => unawaited(_stopListening()),
               ),
             ],
           ),
@@ -462,49 +444,6 @@ class _SubtitleText extends StatelessWidget {
           ),
         ),
       ],
-    );
-  }
-}
-
-class _ControlButton extends StatelessWidget {
-  const _ControlButton({
-    required this.icon,
-    required this.label,
-    required this.color,
-    required this.enabled,
-    required this.onPressed,
-  });
-
-  final IconData icon;
-  final String label;
-  final Color color;
-  final bool enabled;
-  final VoidCallback onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    return Opacity(
-      opacity: enabled ? 1 : 0.4,
-      child: ElevatedButton.icon(
-        onPressed: enabled ? onPressed : null,
-        icon: Icon(icon, size: 18),
-        label: Text(label),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: color,
-          foregroundColor: Colors.white,
-          disabledBackgroundColor: color,
-          disabledForegroundColor: Colors.white,
-          elevation: 0,
-          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(24),
-          ),
-          textStyle: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-      ),
     );
   }
 }

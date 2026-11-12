@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:poly_cript/services/api_key_store.dart';
+import 'package:poly_cript/services/gemini_live_service.dart';
 import 'package:poly_cript/widgets/subtitle_overlay.dart';
 
 class _FakeApiKeyStore extends ApiKeyStore {
@@ -24,38 +27,60 @@ class _FakeApiKeyStore extends ApiKeyStore {
   Future<void> setIncludeMicrophone(bool include) async => includeMic = include;
 }
 
+class _FakeGeminiLiveService extends GeminiLiveService {
+  final StreamController<GeminiLiveState> _states =
+      StreamController<GeminiLiveState>.broadcast();
+
+  @override
+  Stream<GeminiLiveState> get stateStream => _states.stream;
+
+  @override
+  Future<void> connect(String apiKey) async {}
+
+  @override
+  Future<void> disconnect() async {}
+
+  @override
+  Future<void> dispose() async {
+    await _states.close();
+  }
+}
+
 void main() {
-  testWidgets('shows idle state and opens settings when no key is saved', (
+  testWidgets('opens settings automatically when no key is saved', (
     WidgetTester tester,
   ) async {
     final store = _FakeApiKeyStore();
 
     await tester.pumpWidget(
-      MaterialApp(home: SubtitleOverlay(keyStore: store)),
+      MaterialApp(
+        home: SubtitleOverlay(
+          keyStore: store,
+          gemini: _FakeGeminiLiveService(),
+        ),
+      ),
     );
-    await tester.pumpAndSettle();
-
-    expect(find.text('Press Start to begin listening'), findsOneWidget);
-    expect(find.text('IDLE'), findsOneWidget);
-
-    await tester.tap(find.text('Start'));
     await tester.pumpAndSettle();
 
     expect(find.text('Gemini API Key'), findsOneWidget);
     expect(find.text('No key set'), findsOneWidget);
+    expect(find.text('Start'), findsNothing);
+    expect(find.text('Stop'), findsNothing);
   });
 
-  testWidgets('saving a key persists it and closes the settings panel', (
+  testWidgets('saving a key persists it and starts listening automatically', (
     WidgetTester tester,
   ) async {
     final store = _FakeApiKeyStore();
 
     await tester.pumpWidget(
-      MaterialApp(home: SubtitleOverlay(keyStore: store)),
+      MaterialApp(
+        home: SubtitleOverlay(
+          keyStore: store,
+          gemini: _FakeGeminiLiveService(),
+        ),
+      ),
     );
-    await tester.pumpAndSettle();
-
-    await tester.tap(find.byTooltip('Settings'));
     await tester.pumpAndSettle();
 
     await tester.enterText(find.byType(TextField), 'test-api-key');
@@ -65,7 +90,7 @@ void main() {
 
     expect(store.key, 'test-api-key');
     expect(find.text('Gemini API Key'), findsNothing);
-    expect(find.text('IDLE'), findsOneWidget);
+    expect(find.text('STARTING'), findsOneWidget);
   });
 
   testWidgets('toggling microphone preference is persisted with the key', (
@@ -74,11 +99,13 @@ void main() {
     final store = _FakeApiKeyStore();
 
     await tester.pumpWidget(
-      MaterialApp(home: SubtitleOverlay(keyStore: store)),
+      MaterialApp(
+        home: SubtitleOverlay(
+          keyStore: store,
+          gemini: _FakeGeminiLiveService(),
+        ),
+      ),
     );
-    await tester.pumpAndSettle();
-
-    await tester.tap(find.byTooltip('Settings'));
     await tester.pumpAndSettle();
 
     await tester.enterText(find.byType(TextField), 'saved-key');
