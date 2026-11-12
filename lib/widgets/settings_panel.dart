@@ -4,8 +4,9 @@ import 'package:flutter/material.dart';
 
 /// Inline settings form shown inside the floating overlay.
 ///
-/// Lets each user paste their own Gemini API key and opt into capturing
-/// microphone audio alongside system audio.
+/// Lets each user paste their own Gemini API key, opt into capturing
+/// microphone audio alongside system audio, and choose between showing the
+/// source transcription or its translation.
 class SettingsPanel extends StatefulWidget {
   const SettingsPanel({
     super.key,
@@ -103,15 +104,19 @@ class _SettingsPanelState extends State<SettingsPanel> {
             children: [
               const Icon(Icons.key, size: 18, color: Colors.white70),
               const SizedBox(width: 8),
-              const Text(
-                'Gemini API Key',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
+              const Expanded(
+                child: Text(
+                  'Gemini API Key',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
-              const SizedBox(width: 16),
+              const SizedBox(width: 12),
               _PanelToggle(
                 checkboxKey: const ValueKey('include-microphone-toggle'),
                 label: 'Include microphone',
@@ -125,7 +130,7 @@ class _SettingsPanelState extends State<SettingsPanel> {
                 value: _showTranslation,
                 onChanged: (value) => setState(() => _showTranslation = value),
               ),
-              const Spacer(),
+              const SizedBox(width: 12),
               Text(
                 widget.hasSavedKey ? 'Key saved' : 'No key set',
                 style: TextStyle(
