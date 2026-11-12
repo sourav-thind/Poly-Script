@@ -44,6 +44,7 @@ class _SubtitleOverlayState extends State<SubtitleOverlay> {
   bool _isSettingsOpen = false;
   bool _hasSavedKey = false;
   bool _includeMicrophone = false;
+  bool _showTranslation = false;
   String _subtitle = '';
   String? _errorMessage;
   GeminiLiveState _connectionState = GeminiLiveState.disconnected;
@@ -84,10 +85,12 @@ class _SubtitleOverlayState extends State<SubtitleOverlay> {
     try {
       final key = await _keyStore.readKey();
       final includeMic = await _keyStore.readIncludeMicrophone();
+      final showTranslation = await _keyStore.readShowTranslation();
       if (!mounted) return;
       setState(() {
         _hasSavedKey = key != null;
         _includeMicrophone = includeMic;
+        _showTranslation = showTranslation;
       });
       await _startListening();
     } catch (_) {
@@ -122,7 +125,7 @@ class _SubtitleOverlayState extends State<SubtitleOverlay> {
       _subtitle = '';
     });
 
-    await _gemini.connect(key);
+    await _gemini.connect(key, showTranslation: _showTranslation);
     await _startCapture();
   }
 
@@ -205,12 +208,17 @@ class _SubtitleOverlayState extends State<SubtitleOverlay> {
     });
   }
 
-  Future<void> _saveSettings(String? apiKey, bool includeMic) async {
+  Future<void> _saveSettings(
+    String? apiKey,
+    bool includeMic,
+    bool showTranslation,
+  ) async {
     try {
       if (apiKey != null) {
         await _keyStore.saveKey(apiKey);
       }
       await _keyStore.setIncludeMicrophone(includeMic);
+      await _keyStore.setShowTranslation(showTranslation);
     } catch (error) {
       _setError('Could not save settings: $error');
       return;
@@ -220,6 +228,7 @@ class _SubtitleOverlayState extends State<SubtitleOverlay> {
     setState(() {
       if (apiKey != null) _hasSavedKey = true;
       _includeMicrophone = includeMic;
+      _showTranslation = showTranslation;
       _isSettingsOpen = false;
       _errorMessage = null;
     });
@@ -305,8 +314,10 @@ class _SubtitleOverlayState extends State<SubtitleOverlay> {
           child: SettingsPanel(
             hasSavedKey: _hasSavedKey,
             includeMicrophone: _includeMicrophone,
-            onSave: (apiKey, includeMic) =>
-                unawaited(_saveSettings(apiKey, includeMic)),
+            showTranslation: _showTranslation,
+            onSave: (apiKey, includeMic, showTranslation) => unawaited(
+              _saveSettings(apiKey, includeMic, showTranslation),
+            ),
             onRemove: () => unawaited(_removeKey()),
             onCancel: () => setState(() => _isSettingsOpen = false),
           ),

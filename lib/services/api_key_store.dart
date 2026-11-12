@@ -14,6 +14,7 @@ class ApiKeyStore {
 
   static const String _apiKeyKey = 'gemini_api_key';
   static const String _includeMicKey = 'include_microphone';
+  static const String _showTranslationKey = 'show_translation';
 
   final Future<SharedPreferences> Function() _loadPreferences;
 
@@ -52,5 +53,18 @@ class ApiKeyStore {
   Future<void> setIncludeMicrophone(bool include) async {
     final preferences = await _loadPreferences();
     await preferences.setBool(_includeMicKey, include);
+  }
+
+  /// Whether subtitles should show translated text instead of the source
+  /// transcription.
+  Future<bool> readShowTranslation() async {
+    final preferences = await _loadPreferences();
+    return preferences.getBool(_showTranslationKey) ?? false;
+  }
+
+  /// Persists the translation preference.
+  Future<void> setShowTranslation(bool show) async {
+    final preferences = await _loadPreferences();
+    await preferences.setBool(_showTranslationKey, show);
   }
 }

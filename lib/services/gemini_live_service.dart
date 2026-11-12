@@ -75,6 +75,7 @@ class GeminiLiveService {
   GeminiLiveState _state = GeminiLiveState.disconnected;
   String? _apiKey;
   String? _lastError;
+  bool _showTranslation = false;
   bool _manuallyClosed = true;
   bool _opening = false;
   int _reconnectAttempts = 0;
@@ -99,9 +100,12 @@ class GeminiLiveService {
 
   /// Opens the WebSocket connection and performs the setup handshake.
   ///
+  /// When [showTranslation] is `false` the service emits the source
+  /// transcription; when `true` it emits the translated text instead.
+  ///
   /// Missing or empty [apiKey] values are rejected gracefully: the service
   /// emits an error and moves to [GeminiLiveState.error] instead of throwing.
-  Future<void> connect(String apiKey) async {
+  Future<void> connect(String apiKey, {bool showTranslation = false}) async {
     final trimmed = apiKey.trim();
     if (trimmed.isEmpty) {
       _manuallyClosed = true;
@@ -111,6 +115,7 @@ class GeminiLiveService {
     }
 
     _apiKey = trimmed;
+    _showTranslation = showTranslation;
     _manuallyClosed = false;
     _reconnectAttempts = 0;
     await _openConnection();
@@ -261,15 +266,22 @@ class GeminiLiveService {
     final serverContent = decoded['serverContent'];
     if (serverContent is! Map) return;
 
-    // Prefer the translated (output) transcript, fall back to the source
-    // transcript and finally to any text parts the model returns.
+    // Prefer the requested transcript (translated or source), falling back to
+    // the other one and finally to any text parts the model returns.
     final translated = _transcriptText(serverContent['outputTranscription']);
     final source = _transcriptText(serverContent['inputTranscription']);
     final modelTurnText = _modelTurnText(serverContent['modelTurn']);
 
-    final text = translated.isNotEmpty
-        ? translated
-        : (source.isNotEmpty ? source : modelTurnText);
+    final String text;
+    if (_showTranslation) {
+      text = translated.isNotEmpty
+          ? translated
+          : (source.isNotEmpty ? source : modelTurnText);
+    } else {
+      text = source.isNotEmpty
+          ? source
+          : (translated.isNotEmpty ? translated : modelTurnText);
+    }
     if (text.isEmpty) return;
 
     final cleaned = _cleanDisfluencies(text);
