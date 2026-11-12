@@ -211,8 +211,9 @@ class GeminiLiveService {
     // When translation is off, use the dedicated speech-to-text model so the
     // source language is never translated behind the scenes.
     final selectedModel = _showTranslation ? model : modelTranscribe;
-    final resolvedModel =
-        selectedModel.startsWith('models/') ? selectedModel : 'models/$selectedModel';
+    final resolvedModel = selectedModel.startsWith('models/')
+        ? selectedModel
+        : 'models/$selectedModel';
     final isTranslate = resolvedModel.contains('translate');
 
     final generationConfig = <String, dynamic>{
@@ -270,18 +271,12 @@ class GeminiLiveService {
     final serverContent = decoded['serverContent'];
     if (serverContent is! Map) return;
 
-    // Only read the requested transcript. Mixing the source and translated
-    // transcripts would duplicate text when both arrive in separate events.
-    final translated = _transcriptText(serverContent['outputTranscription']);
-    final source = _transcriptText(serverContent['inputTranscription']);
-    final modelTurnText = _modelTurnText(serverContent['modelTurn']);
-
-    final String text;
-    if (_showTranslation) {
-      text = translated.isNotEmpty ? translated : modelTurnText;
-    } else {
-      text = source.isNotEmpty ? source : modelTurnText;
-    }
+    // Read exactly one transcript stream. Mixing the source transcription, the
+    // translated transcription and the model turn would emit the same speech
+    // twice when those arrive in separate events.
+    final text = _showTranslation
+        ? _transcriptText(serverContent['outputTranscription'])
+        : _transcriptText(serverContent['inputTranscription']);
     if (text.isEmpty) return;
 
     final cleaned = _cleanDisfluencies(text);
@@ -294,20 +289,6 @@ class GeminiLiveService {
     if (transcription is! Map) return '';
     final text = transcription['text'];
     return text is String ? text : '';
-  }
-
-  String _modelTurnText(dynamic modelTurn) {
-    if (modelTurn is! Map) return '';
-    final parts = modelTurn['parts'];
-    if (parts is! List) return '';
-
-    final buffer = StringBuffer();
-    for (final part in parts) {
-      if (part is! Map) continue;
-      final text = part['text'];
-      if (text is String) buffer.write(text);
-    }
-    return buffer.toString();
   }
 
   void _handleSocketError(Object error) {
