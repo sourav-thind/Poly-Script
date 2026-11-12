@@ -208,12 +208,10 @@ class GeminiLiveService {
   }
 
   void _sendSetup() {
-    // When translation is off, use the dedicated speech-to-text model so the
-    // source language is never translated behind the scenes.
-    final selectedModel = _showTranslation ? model : modelTranscribe;
-    final resolvedModel = selectedModel.startsWith('models/')
-        ? selectedModel
-        : 'models/$selectedModel';
+    // Always use the translation-capable model: it exposes both the source
+    // transcription and the translated transcription, and we simply pick which
+    // one to display based on the user's preference.
+    final resolvedModel = model.startsWith('models/') ? model : 'models/$model';
     final isTranslate = resolvedModel.contains('translate');
 
     final generationConfig = <String, dynamic>{
