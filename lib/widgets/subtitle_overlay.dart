@@ -322,7 +322,7 @@ class _SubtitleOverlayState extends State<SubtitleOverlay> {
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           decoration: BoxDecoration(
             color: Colors.black.withOpacity(0.75),
-            borderRadius: BorderRadius.circular(40),
+            borderRadius: BorderRadius.circular(10),
             border: Border.all(color: Colors.white.withOpacity(0.08)),
             boxShadow: [
               BoxShadow(
