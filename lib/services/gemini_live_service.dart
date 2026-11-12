@@ -208,7 +208,11 @@ class GeminiLiveService {
   }
 
   void _sendSetup() {
-    final resolvedModel = model.startsWith('models/') ? model : 'models/$model';
+    // When translation is off, use the dedicated speech-to-text model so the
+    // source language is never translated behind the scenes.
+    final selectedModel = _showTranslation ? model : modelTranscribe;
+    final resolvedModel =
+        selectedModel.startsWith('models/') ? selectedModel : 'models/$selectedModel';
     final isTranslate = resolvedModel.contains('translate');
 
     final generationConfig = <String, dynamic>{
@@ -266,21 +270,17 @@ class GeminiLiveService {
     final serverContent = decoded['serverContent'];
     if (serverContent is! Map) return;
 
-    // Prefer the requested transcript (translated or source), falling back to
-    // the other one and finally to any text parts the model returns.
+    // Only read the requested transcript. Mixing the source and translated
+    // transcripts would duplicate text when both arrive in separate events.
     final translated = _transcriptText(serverContent['outputTranscription']);
     final source = _transcriptText(serverContent['inputTranscription']);
     final modelTurnText = _modelTurnText(serverContent['modelTurn']);
 
     final String text;
     if (_showTranslation) {
-      text = translated.isNotEmpty
-          ? translated
-          : (source.isNotEmpty ? source : modelTurnText);
+      text = translated.isNotEmpty ? translated : modelTurnText;
     } else {
-      text = source.isNotEmpty
-          ? source
-          : (translated.isNotEmpty ? translated : modelTurnText);
+      text = source.isNotEmpty ? source : modelTurnText;
     }
     if (text.isEmpty) return;
 
