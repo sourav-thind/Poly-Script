@@ -142,13 +142,18 @@ class _SubtitleOverlayState extends State<SubtitleOverlay> {
     final sources = <Stream<Uint8List>>[];
 
     try {
+      // Request a rate above any common device mix rate so the plugin forwards
+      // every captured frame instead of truncating them. The actual rate is
+      // inferred and resampled to 16 kHz below.
       final system = SystemAudioCapture(
-        config: SystemAudioConfig(sampleRate: 16000, channels: 1),
+        config: SystemAudioConfig(sampleRate: 192000, channels: 1),
       );
       await system.startCapture();
       _systemCapture = system;
       final stream = system.audioStream;
-      if (stream != null) sources.add(stream);
+      if (stream != null) {
+        sources.add(resampleSystemAudio(stream));
+      }
     } catch (error) {
       _setError('System audio capture failed: $error');
     }

@@ -1,6 +1,52 @@
 import 'dart:async';
 import 'dart:typed_data';
 
+/// Resamples raw 16-bit mono PCM chunks captured at an unknown device sample
+/// rate down to [targetSampleRate].
+///
+/// The Windows `desktop_audio_capture` plugin emits system-loopback audio at
+/// the device's native mix rate (usually 44.1/48 kHz) while claiming it is at
+/// the requested rate, so it must be resampled before being sent to Gemini.
+/// Each emitted chunk is assumed to cover [chunkDuration] (the plugin emits
+/// fixed 50 ms chunks), which lets us infer the real source rate from the
+/// chunk size.
+Stream<Uint8List> resampleSystemAudio(
+  Stream<Uint8List> source, {
+  int targetSampleRate = 16000,
+  Duration chunkDuration = const Duration(milliseconds: 50),
+}) {
+  final chunkSeconds =
+      chunkDuration.inMicroseconds / Duration.microsecondsPerSecond;
+
+  return source.map((chunk) {
+    final samples = chunk.length ~/ 2;
+    if (samples < 2 || chunkSeconds <= 0) return Uint8List(0);
+
+    final sourceSampleRate = samples / chunkSeconds;
+    if ((sourceSampleRate - targetSampleRate).abs() < 1) return chunk;
+
+    final outputSamples =
+        (samples * targetSampleRate / sourceSampleRate).round();
+    if (outputSamples <= 0) return Uint8List(0);
+
+    final output = Uint8List(outputSamples * 2);
+    final ratio = sourceSampleRate / targetSampleRate;
+
+    for (var i = 0; i < outputSamples; i++) {
+      final position = i * ratio;
+      final index = position.floor();
+      final nextIndex = index + 1 < samples ? index + 1 : samples - 1;
+      final fraction = position - index;
+      final current = _readInt16(chunk, index * 2);
+      final next = _readInt16(chunk, nextIndex * 2);
+      final value = (current + (next - current) * fraction).round();
+      _writeInt16(output, i * 2, value);
+    }
+
+    return output;
+  }).where((chunk) => chunk.isNotEmpty);
+}
+
 /// Mixes multiple raw 16-bit mono PCM streams (same sample rate) into a single
 /// stream suitable for the Gemini Live realtime input.
 ///
@@ -58,7 +104,6 @@ class PcmMixer {
           buffer.removeRange(0, take * 2);
         }
       }
-
       if (!controller.isClosed) {
         controller.add(Uint8List.fromList(output));
       }
@@ -97,15 +142,15 @@ class PcmMixer {
 
     return controller.stream;
   }
+}
 
-  int _readInt16(List<int> bytes, int offset) {
-    final value = (bytes[offset] & 0xFF) | ((bytes[offset + 1] & 0xFF) << 8);
-    return value >= 0x8000 ? value - 0x10000 : value;
-  }
+int _readInt16(List<int> bytes, int offset) {
+  final value = (bytes[offset] & 0xFF) | ((bytes[offset + 1] & 0xFF) << 8);
+  return value >= 0x8000 ? value - 0x10000 : value;
+}
 
-  void _writeInt16(List<int> bytes, int offset, int value) {
-    final clamped = value < -32768 ? -32768 : (value > 32767 ? 32767 : value);
-    bytes[offset] = clamped & 0xFF;
-    bytes[offset + 1] = (clamped >> 8) & 0xFF;
-  }
+void _writeInt16(List<int> bytes, int offset, int value) {
+  final clamped = value < -32768 ? -32768 : (value > 32767 ? 32767 : value);
+  bytes[offset] = clamped & 0xFF;
+  bytes[offset + 1] = (clamped >> 8) & 0xFF;
 }
