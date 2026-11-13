@@ -400,7 +400,7 @@ class _ModeBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     final color = showTranslation
         ? const Color(0xFF34C759)
-        : Colors.white.withOpacity(0.65);
+        : const Color(0xFFFF453A);
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
