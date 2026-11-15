@@ -157,4 +157,30 @@ void main() {
     expect(store.showTranslation, isTrue);
     expect(find.text('T-MODE'), findsOneWidget);
   });
+
+  testWidgets('shows a separate translation box when translation is on', (
+    WidgetTester tester,
+  ) async {
+    tester.view.physicalSize = const Size(800, 160);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final store = _FakeApiKeyStore()
+      ..key = 'saved-key'
+      ..showTranslation = true;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: SubtitleOverlay(
+          keyStore: store,
+          gemini: _FakeGeminiLiveService(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('T-MODE'), findsOneWidget);
+    expect(find.text('Translation…'), findsOneWidget);
+  });
 }
