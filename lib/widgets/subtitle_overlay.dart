@@ -343,46 +343,76 @@ class _SubtitleOverlayState extends State<SubtitleOverlay> {
       body: Stack(
         children: [
           Center(
-            child: Container(
-              margin: const EdgeInsets.all(12),
+            child: Padding(
               padding: const EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 14,
+                horizontal: 12,
+                vertical: 8,
               ),
-              decoration: BoxDecoration(
-                color: Colors.black.withOpacity(0.75),
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: Colors.white.withOpacity(0.08)),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.35),
-                    blurRadius: 24,
-                    offset: const Offset(0, 8),
-                  ),
-                ],
-              ),
-              child: Row(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const _DragHandle(),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: _SubtitleText(
-                      statusLabel: _statusLabel,
-                      statusColor: _statusColor,
-                      message: _message,
-                      isError: _messageIsError,
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 14,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.75),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                        color: Colors.white.withOpacity(0.08),
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.35),
+                          blurRadius: 24,
+                          offset: const Offset(0, 8),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      children: [
+                        const _DragHandle(),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: _SubtitleText(
+                            statusLabel: _statusLabel,
+                            statusColor: _statusColor,
+                            message: _message,
+                            isError: _messageIsError,
+                          ),
+                        ),
+                        const SizedBox(width: 14),
+                        IconButton(
+                          tooltip: 'Settings',
+                          onPressed: () => unawaited(_openSettings()),
+                          icon: const Icon(
+                            Icons.settings,
+                            size: 20,
+                            color: Colors.white70,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  const SizedBox(width: 14),
-                  IconButton(
-                    tooltip: 'Settings',
-                    onPressed: () => unawaited(_openSettings()),
-                    icon: const Icon(
-                      Icons.settings,
-                      size: 20,
-                      color: Colors.white70,
+                  if (_showTranslation) ...[
+                    const SizedBox(height: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 8,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.6),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: Colors.white.withOpacity(0.08),
+                        ),
+                      ),
+                      child: _TranslationText(text: _translation),
                     ),
-                  ),
+                  ],
                 ],
               ),
             ),
@@ -569,6 +599,83 @@ class _SubtitleTextState extends State<_SubtitleText> {
           ),
         ),
       ],
+    );
+  }
+}
+
+/// Single-line, auto-scrolling view of the translated text.
+class _TranslationText extends StatefulWidget {
+  const _TranslationText({required this.text});
+
+  final String text;
+
+  @override
+  State<_TranslationText> createState() => _TranslationTextState();
+}
+
+class _TranslationTextState extends State<_TranslationText> {
+  static const double _lineHeight = 15 * 1.3;
+
+  final ScrollController _scrollController = ScrollController();
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollToEnd();
+  }
+
+  @override
+  void didUpdateWidget(_TranslationText oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.text != widget.text) {
+      _scrollToEnd(
+        animate: oldWidget.text.isNotEmpty && widget.text.isNotEmpty,
+      );
+    }
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _scrollToEnd({bool animate = false}) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_scrollController.hasClients) return;
+      final target = _scrollController.position.maxScrollExtent;
+      if (!animate) {
+        _scrollController.jumpTo(target);
+        return;
+      }
+      _scrollController.animateTo(
+        target,
+        duration: const Duration(milliseconds: 220),
+        curve: Curves.easeOut,
+      );
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final hasText = widget.text.isNotEmpty;
+
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxHeight: _lineHeight),
+      child: SingleChildScrollView(
+        controller: _scrollController,
+        child: Text(
+          hasText ? widget.text : 'Translation…',
+          style: TextStyle(
+            color: hasText
+                ? const Color(0xFFB8F5C8)
+                : Colors.white.withOpacity(0.4),
+            fontSize: 15,
+            fontWeight: FontWeight.w500,
+            height: 1.3,
+          ),
+        ),
+      ),
     );
   }
 }
