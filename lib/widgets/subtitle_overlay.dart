@@ -33,6 +33,7 @@ class _SubtitleOverlayState extends State<SubtitleOverlay> {
   final PcmMixer _mixer = PcmMixer();
 
   StreamSubscription<String>? _subtitleSub;
+  StreamSubscription<String>? _translationSub;
   StreamSubscription<GeminiLiveState>? _stateSub;
   StreamSubscription<String>? _errorSub;
   StreamSubscription<Uint8List>? _audioSub;
@@ -46,6 +47,7 @@ class _SubtitleOverlayState extends State<SubtitleOverlay> {
   bool _includeMicrophone = false;
   bool _showTranslation = false;
   String _subtitle = '';
+  String _translation = '';
   String? _errorMessage;
   GeminiLiveState _connectionState = GeminiLiveState.disconnected;
 
@@ -58,6 +60,10 @@ class _SubtitleOverlayState extends State<SubtitleOverlay> {
     _subtitleSub = _gemini.subtitleStream.listen((text) {
       if (!mounted) return;
       setState(() => _subtitle = _appendSubtitle(_subtitle, text));
+    });
+    _translationSub = _gemini.translationStream.listen((text) {
+      if (!mounted) return;
+      setState(() => _translation = _appendSubtitle(_translation, text));
     });
     _stateSub = _gemini.stateStream.listen((state) {
       if (!mounted) return;
@@ -74,6 +80,7 @@ class _SubtitleOverlayState extends State<SubtitleOverlay> {
   @override
   void dispose() {
     _subtitleSub?.cancel();
+    _translationSub?.cancel();
     _stateSub?.cancel();
     _errorSub?.cancel();
     unawaited(_stopCapture());
@@ -123,6 +130,7 @@ class _SubtitleOverlayState extends State<SubtitleOverlay> {
       _isSettingsOpen = false;
       _errorMessage = null;
       _subtitle = '';
+      _translation = '';
     });
 
     await _gemini.connect(key, showTranslation: _showTranslation);

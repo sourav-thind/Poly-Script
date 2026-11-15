@@ -63,6 +63,8 @@ class GeminiLiveService {
 
   final StreamController<String> _subtitleController =
       StreamController<String>.broadcast();
+  final StreamController<String> _translationController =
+      StreamController<String>.broadcast();
   final StreamController<GeminiLiveState> _stateController =
       StreamController<GeminiLiveState>.broadcast();
   final StreamController<String> _errorController =
@@ -80,8 +82,12 @@ class GeminiLiveService {
   bool _opening = false;
   int _reconnectAttempts = 0;
 
-  /// Continuous, cleaned French subtitle text.
+  /// Continuous, cleaned source-language transcription text.
   Stream<String> get subtitleStream => _subtitleController.stream;
+
+  /// Continuous, cleaned translated text. Only populated while translation is
+  /// enabled for the active connection.
+  Stream<String> get translationStream => _translationController.stream;
 
   /// Emits whenever the connection lifecycle state changes.
   Stream<GeminiLiveState> get stateStream => _stateController.stream;
@@ -155,6 +161,7 @@ class GeminiLiveService {
   Future<void> dispose() async {
     await disconnect();
     await _subtitleController.close();
+    await _translationController.close();
     await _stateController.close();
     await _errorController.close();
   }
@@ -269,17 +276,23 @@ class GeminiLiveService {
     final serverContent = decoded['serverContent'];
     if (serverContent is! Map) return;
 
-    // Read exactly one transcript stream. Mixing the source transcription, the
-    // translated transcription and the model turn would emit the same speech
-    // twice when those arrive in separate events.
-    final text = _showTranslation
-        ? _transcriptText(serverContent['outputTranscription'])
-        : _transcriptText(serverContent['inputTranscription']);
-    if (text.isEmpty) return;
+    // The source transcription always drives the main subtitle box. When
+    // translation is enabled, the translated stream feeds the dedicated
+    // translation box, so the two never mix or duplicate each other.
+    final source = _cleanDisfluencies(
+      _transcriptText(serverContent['inputTranscription']),
+    );
+    if (source.isNotEmpty) {
+      _subtitleController.add(source);
+    }
 
-    final cleaned = _cleanDisfluencies(text);
-    if (cleaned.isNotEmpty) {
-      _subtitleController.add(cleaned);
+    if (_showTranslation) {
+      final translated = _cleanDisfluencies(
+        _transcriptText(serverContent['outputTranscription']),
+      );
+      if (translated.isNotEmpty) {
+        _translationController.add(translated);
+      }
     }
   }
 
