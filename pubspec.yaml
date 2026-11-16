@@ -53,6 +53,15 @@ dev_dependencies:
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
 
+msix_config:
+  display_name: PolyCript
+  publisher_display_name: PolyCript
+  identity_name: com.polycript.app
+  msix_version: 1.0.0.0
+  logo_path: windows/runner/resources/app_icon.png
+  capabilities: internetClient, microphone
+  install_certificate: false
+
 # The following section is specific to Flutter packages.
 flutter:
 
