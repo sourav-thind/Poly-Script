@@ -182,5 +182,7 @@ void main() {
 
     expect(find.text('T-MODE'), findsOneWidget);
     expect(find.text('Translation…'), findsOneWidget);
+    expect(find.byTooltip('Settings'), findsOneWidget);
+    expect(find.byTooltip('Close'), findsOneWidget);
   });
 }
