@@ -393,6 +393,15 @@ class _SubtitleOverlayState extends State<SubtitleOverlay> {
                             color: Colors.white70,
                           ),
                         ),
+                        IconButton(
+                          tooltip: 'Close',
+                          onPressed: () => unawaited(windowManager.close()),
+                          icon: const Icon(
+                            Icons.close,
+                            size: 20,
+                            color: Colors.white70,
+                          ),
+                        ),
                       ],
                     ),
                   ),
