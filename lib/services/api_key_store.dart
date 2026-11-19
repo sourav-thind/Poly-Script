@@ -1,5 +1,7 @@
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'translation_languages.dart';
+
 /// Persists the user's Gemini API key and related preferences locally.
 ///
 /// Values survive app restarts and are scoped to the current OS user.
@@ -15,6 +17,7 @@ class ApiKeyStore {
   static const String _apiKeyKey = 'gemini_api_key';
   static const String _includeMicKey = 'include_microphone';
   static const String _showTranslationKey = 'show_translation';
+  static const String _targetLanguageKey = 'target_language';
 
   final Future<SharedPreferences> Function() _loadPreferences;
 
@@ -66,5 +69,21 @@ class ApiKeyStore {
   Future<void> setShowTranslation(bool show) async {
     final preferences = await _loadPreferences();
     await preferences.setBool(_showTranslationKey, show);
+  }
+
+  /// BCP-47 code of the chosen translation target language.
+  Future<String> readTargetLanguage() async {
+    final preferences = await _loadPreferences();
+    final code = preferences.getString(_targetLanguageKey)?.trim();
+    if (code == null || !isSupportedTargetLanguage(code)) {
+      return defaultTargetLanguageCode;
+    }
+    return code;
+  }
+
+  /// Persists the chosen translation target language.
+  Future<void> setTargetLanguage(String code) async {
+    final preferences = await _loadPreferences();
+    await preferences.setString(_targetLanguageKey, code.trim());
   }
 }
