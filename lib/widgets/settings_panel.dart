@@ -2,6 +2,8 @@
 
 import 'package:flutter/material.dart';
 
+import '../services/translation_languages.dart';
+
 /// Inline settings form shown inside the floating overlay.
 ///
 /// Lets each user paste their own Gemini API key, opt into capturing
@@ -13,6 +15,7 @@ class SettingsPanel extends StatefulWidget {
     required this.hasSavedKey,
     required this.includeMicrophone,
     required this.showTranslation,
+    required this.targetLanguageCode,
     required this.onSave,
     required this.onRemove,
     required this.onCancel,
