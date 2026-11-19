@@ -223,13 +223,13 @@ void main() {
     await tester.pump();
     await tester.tap(dropdown);
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Afrikaans').last);
+    await tester.tap(find.text('German').last);
     await tester.pumpAndSettle();
     await tester.tap(find.text('Save'));
     await tester.pumpAndSettle();
 
-    expect(store.targetLanguageCode, 'af');
-    expect(gemini.connectedTargetLanguageCode, 'af');
+    expect(store.targetLanguageCode, 'de');
+    expect(gemini.connectedTargetLanguageCode, 'de');
   });
 
   testWidgets('settings panel fits the 800x160 window with language dropdown', (
