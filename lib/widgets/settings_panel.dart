@@ -30,12 +30,16 @@ class SettingsPanel extends StatefulWidget {
   /// Whether translated text should be shown instead of the transcription.
   final bool showTranslation;
 
-  /// Called with a new key (or `null` to keep the existing one), the mic
-  /// preference and the translation preference.
+  /// BCP-47 code of the currently selected translation target language.
+  final String targetLanguageCode;
+
+  /// Called with a new key (or `null` to keep the existing one), the mic and
+  /// translation preferences, and the chosen target language code.
   final void Function(
     String? apiKey,
     bool includeMicrophone,
     bool showTranslation,
+    String targetLanguageCode,
   ) onSave;
 
   /// Called when the user removes the stored key.
@@ -53,6 +57,7 @@ class _SettingsPanelState extends State<SettingsPanel> {
   bool _obscure = true;
   late bool _includeMic = widget.includeMicrophone;
   late bool _showTranslation = widget.showTranslation;
+  late String _targetLanguageCode = widget.targetLanguageCode;
 
   @override
   void initState() {
@@ -79,14 +84,15 @@ class _SettingsPanelState extends State<SettingsPanel> {
       trimmed.isEmpty ? null : trimmed,
       _includeMic,
       _showTranslation,
+      _targetLanguageCode,
     );
   }
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.all(12),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      margin: const EdgeInsets.all(10),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
         color: Colors.black.withOpacity(0.85),
         borderRadius: BorderRadius.circular(24),
