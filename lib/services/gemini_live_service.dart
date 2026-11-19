@@ -129,6 +129,9 @@ class GeminiLiveService {
 
     _apiKey = trimmed;
     _showTranslation = showTranslation;
+    if (targetLanguageCode != null) {
+      this.targetLanguageCode = targetLanguageCode;
+    }
     _manuallyClosed = false;
     _reconnectAttempts = 0;
     await _openConnection();

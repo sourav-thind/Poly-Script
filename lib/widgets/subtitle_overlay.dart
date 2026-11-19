@@ -10,6 +10,7 @@ import 'package:window_manager/legacy.dart';
 import '../services/api_key_store.dart';
 import '../services/audio_mixer.dart';
 import '../services/gemini_live_service.dart';
+import '../services/translation_languages.dart';
 import 'settings_panel.dart';
 
 /// Floating subtitle pill shown in the transparent, always-on-top overlay
@@ -46,6 +47,7 @@ class _SubtitleOverlayState extends State<SubtitleOverlay> {
   bool _hasSavedKey = false;
   bool _includeMicrophone = false;
   bool _showTranslation = false;
+  String _targetLanguageCode = defaultTargetLanguageCode;
   String _subtitle = '';
   String _translation = '';
   String? _errorMessage;
@@ -93,11 +95,13 @@ class _SubtitleOverlayState extends State<SubtitleOverlay> {
       final key = await _keyStore.readKey();
       final includeMic = await _keyStore.readIncludeMicrophone();
       final showTranslation = await _keyStore.readShowTranslation();
+      final targetLanguage = await _keyStore.readTargetLanguage();
       if (!mounted) return;
       setState(() {
         _hasSavedKey = key != null;
         _includeMicrophone = includeMic;
         _showTranslation = showTranslation;
+        _targetLanguageCode = targetLanguage;
       });
       await _startListening();
     } catch (_) {
