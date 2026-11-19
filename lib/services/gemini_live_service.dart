@@ -56,7 +56,7 @@ class GeminiLiveService {
   final String model;
 
   /// BCP-47 code of the language to translate subtitles into.
-  final String targetLanguageCode;
+  String targetLanguageCode;
 
   /// How long to wait for the socket handshake before giving up.
   final Duration connectTimeout;
@@ -109,9 +109,16 @@ class GeminiLiveService {
   /// When [showTranslation] is `false` the service emits the source
   /// transcription; when `true` it emits the translated text instead.
   ///
+  /// When supplied, [targetLanguageCode] replaces the target language used for
+  /// this and subsequent sessions.
+  ///
   /// Missing or empty [apiKey] values are rejected gracefully: the service
   /// emits an error and moves to [GeminiLiveState.error] instead of throwing.
-  Future<void> connect(String apiKey, {bool showTranslation = false}) async {
+  Future<void> connect(
+    String apiKey, {
+    bool showTranslation = false,
+    String? targetLanguageCode,
+  }) async {
     final trimmed = apiKey.trim();
     if (trimmed.isEmpty) {
       _manuallyClosed = true;

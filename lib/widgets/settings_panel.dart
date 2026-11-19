@@ -7,8 +7,9 @@ import '../services/translation_languages.dart';
 /// Inline settings form shown inside the floating overlay.
 ///
 /// Lets each user paste their own Gemini API key, opt into capturing
-/// microphone audio alongside system audio, and choose between showing the
-/// source transcription or its translation.
+/// microphone audio alongside system audio, choose the translation target
+/// language, and choose between showing the source transcription or its
+/// translation.
 class SettingsPanel extends StatefulWidget {
   const SettingsPanel({
     super.key,
@@ -152,7 +153,46 @@ class _SettingsPanelState extends State<SettingsPanel> {
               ),
             ],
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              const Icon(Icons.translate, size: 16, color: Colors.white70),
+              const SizedBox(width: 8),
+              const Text(
+                'Translate to',
+                style: TextStyle(color: Colors.white70, fontSize: 12),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: DropdownButton<String>(
+                  key: const ValueKey('target-language-dropdown'),
+                  value: _targetLanguageCode,
+                  isDense: true,
+                  isExpanded: true,
+                  items: [
+                    for (final language in translationLanguages)
+                      DropdownMenuItem<String>(
+                        value: language.code,
+                        child: Text(
+                          language.name,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(fontSize: 12),
+                        ),
+                      ),
+                  ],
+                  onChanged: (code) {
+                    if (code != null) {
+                      setState(() => _targetLanguageCode = code);
+                    }
+                  },
+                  dropdownColor: Colors.black,
+                  style: const TextStyle(color: Colors.white, fontSize: 12),
+                  underline: Container(height: 1, color: Colors.white24),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
           Row(
             children: [
               Expanded(
