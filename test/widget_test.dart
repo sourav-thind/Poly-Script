@@ -5,12 +5,14 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:poly_cript/services/api_key_store.dart';
 import 'package:poly_cript/services/gemini_live_service.dart';
+import 'package:poly_cript/services/translation_languages.dart';
 import 'package:poly_cript/widgets/subtitle_overlay.dart';
 
 class _FakeApiKeyStore extends ApiKeyStore {
   String? key;
   bool includeMic = false;
   bool showTranslation = false;
+  String targetLanguageCode = defaultTargetLanguageCode;
 
   @override
   Future<String?> readKey() async => key;
@@ -32,17 +34,32 @@ class _FakeApiKeyStore extends ApiKeyStore {
 
   @override
   Future<void> setShowTranslation(bool show) async => showTranslation = show;
+
+  @override
+  Future<String> readTargetLanguage() async => targetLanguageCode;
+
+  @override
+  Future<void> setTargetLanguage(String code) async =>
+      targetLanguageCode = code.trim();
 }
 
 class _FakeGeminiLiveService extends GeminiLiveService {
   final StreamController<GeminiLiveState> _states =
       StreamController<GeminiLiveState>.broadcast();
 
+  String? connectedTargetLanguageCode;
+
   @override
   Stream<GeminiLiveState> get stateStream => _states.stream;
 
   @override
-  Future<void> connect(String apiKey, {bool showTranslation = false}) async {}
+  Future<void> connect(
+    String apiKey, {
+    bool showTranslation = false,
+    String? targetLanguageCode,
+  }) async {
+    connectedTargetLanguageCode = targetLanguageCode;
+  }
 
   @override
   Future<void> disconnect() async {}
@@ -184,5 +201,55 @@ void main() {
     expect(find.text('Translation…'), findsOneWidget);
     expect(find.byTooltip('Settings'), findsOneWidget);
     expect(find.byTooltip('Close'), findsOneWidget);
+  });
+
+  testWidgets('target language defaults to French and can be saved', (
+    WidgetTester tester,
+  ) async {
+    final store = _FakeApiKeyStore();
+    final gemini = _FakeGeminiLiveService();
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: SubtitleOverlay(keyStore: store, gemini: gemini),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final dropdown = find.byKey(const ValueKey('target-language-dropdown'));
+    expect(tester.widget<DropdownButton<String>>(dropdown).value, 'fr');
+
+    await tester.enterText(find.byType(TextField), 'test-api-key');
+    await tester.pump();
+    await tester.tap(dropdown);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Afrikaans').last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Save'));
+    await tester.pumpAndSettle();
+
+    expect(store.targetLanguageCode, 'af');
+    expect(gemini.connectedTargetLanguageCode, 'af');
+  });
+
+  testWidgets('settings panel fits the 800x160 window with language dropdown', (
+    WidgetTester tester,
+  ) async {
+    tester.view.physicalSize = const Size(800, 160);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: SubtitleOverlay(
+          keyStore: _FakeApiKeyStore(),
+          gemini: _FakeGeminiLiveService(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const ValueKey('target-language-dropdown')), findsOneWidget);
   });
 }
