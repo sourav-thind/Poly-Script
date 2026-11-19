@@ -137,7 +137,11 @@ class _SubtitleOverlayState extends State<SubtitleOverlay> {
       _translation = '';
     });
 
-    await _gemini.connect(key, showTranslation: _showTranslation);
+    await _gemini.connect(
+      key,
+      showTranslation: _showTranslation,
+      targetLanguageCode: _targetLanguageCode,
+    );
     await _startCapture();
   }
 
@@ -229,6 +233,7 @@ class _SubtitleOverlayState extends State<SubtitleOverlay> {
     String? apiKey,
     bool includeMic,
     bool showTranslation,
+    String targetLanguageCode,
   ) async {
     try {
       if (apiKey != null) {
@@ -236,6 +241,7 @@ class _SubtitleOverlayState extends State<SubtitleOverlay> {
       }
       await _keyStore.setIncludeMicrophone(includeMic);
       await _keyStore.setShowTranslation(showTranslation);
+      await _keyStore.setTargetLanguage(targetLanguageCode);
     } catch (error) {
       _setError('Could not save settings: $error');
       return;
@@ -246,6 +252,7 @@ class _SubtitleOverlayState extends State<SubtitleOverlay> {
       if (apiKey != null) _hasSavedKey = true;
       _includeMicrophone = includeMic;
       _showTranslation = showTranslation;
+      _targetLanguageCode = targetLanguageCode;
       _isSettingsOpen = false;
       _errorMessage = null;
     });
@@ -332,8 +339,15 @@ class _SubtitleOverlayState extends State<SubtitleOverlay> {
             hasSavedKey: _hasSavedKey,
             includeMicrophone: _includeMicrophone,
             showTranslation: _showTranslation,
-            onSave: (apiKey, includeMic, showTranslation) => unawaited(
-              _saveSettings(apiKey, includeMic, showTranslation),
+            targetLanguageCode: _targetLanguageCode,
+            onSave: (apiKey, includeMic, showTranslation, targetLanguageCode) =>
+                unawaited(
+              _saveSettings(
+                apiKey,
+                includeMic,
+                showTranslation,
+                targetLanguageCode,
+              ),
             ),
             onRemove: () => unawaited(_removeKey()),
             onCancel: () => setState(() => _isSettingsOpen = false),
