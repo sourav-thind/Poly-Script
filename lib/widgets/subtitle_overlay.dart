@@ -342,13 +342,13 @@ class _SubtitleOverlayState extends State<SubtitleOverlay> {
             targetLanguageCode: _targetLanguageCode,
             onSave: (apiKey, includeMic, showTranslation, targetLanguageCode) =>
                 unawaited(
-              _saveSettings(
-                apiKey,
-                includeMic,
-                showTranslation,
-                targetLanguageCode,
-              ),
-            ),
+                  _saveSettings(
+                    apiKey,
+                    includeMic,
+                    showTranslation,
+                    targetLanguageCode,
+                  ),
+                ),
             onRemove: () => unawaited(_removeKey()),
             onCancel: () => setState(() => _isSettingsOpen = false),
           ),
@@ -362,10 +362,7 @@ class _SubtitleOverlayState extends State<SubtitleOverlay> {
         children: [
           Center(
             child: Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 12,
-                vertical: 8,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -378,9 +375,7 @@ class _SubtitleOverlayState extends State<SubtitleOverlay> {
                     decoration: BoxDecoration(
                       color: Colors.black.withOpacity(0.75),
                       borderRadius: BorderRadius.circular(10),
-                      border: Border.all(
-                        color: Colors.white.withOpacity(0.08),
-                      ),
+                      border: Border.all(color: Colors.white.withOpacity(0.08)),
                       boxShadow: [
                         BoxShadow(
                           color: Colors.black.withOpacity(0.35),
@@ -548,8 +543,7 @@ class _SubtitleTextState extends State<_SubtitleText> {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.message != widget.message) {
       _scrollToEnd(
-        animate:
-            oldWidget.message.isNotEmpty && widget.message.isNotEmpty,
+        animate: oldWidget.message.isNotEmpty && widget.message.isNotEmpty,
       );
     }
   }
@@ -615,9 +609,7 @@ class _SubtitleTextState extends State<_SubtitleText> {
             child: Text(
               widget.message,
               style: TextStyle(
-                color: widget.isError
-                    ? const Color(0xFFFF8A80)
-                    : Colors.white,
+                color: widget.isError ? const Color(0xFFFF8A80) : Colors.white,
                 fontSize: 18,
                 fontWeight: FontWeight.w500,
                 height: 1.25,

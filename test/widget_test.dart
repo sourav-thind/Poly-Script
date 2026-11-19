@@ -160,8 +160,9 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    final translationToggle =
-        find.byKey(const ValueKey('show-translation-toggle'));
+    final translationToggle = find.byKey(
+      const ValueKey('show-translation-toggle'),
+    );
     expect(tester.widget<Checkbox>(translationToggle).value, isFalse);
 
     await tester.enterText(find.byType(TextField), 'saved-key');
@@ -250,6 +251,9 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.byKey(const ValueKey('target-language-dropdown')), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('target-language-dropdown')),
+      findsOneWidget,
+    );
   });
 }

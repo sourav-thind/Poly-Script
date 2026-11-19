@@ -12,7 +12,7 @@ import 'translation_languages.dart';
 /// Manager via DPAPI), which requires the Visual C++ ATL build component.
 class ApiKeyStore {
   ApiKeyStore({Future<SharedPreferences> Function()? preferencesLoader})
-      : _loadPreferences = preferencesLoader ?? SharedPreferences.getInstance;
+    : _loadPreferences = preferencesLoader ?? SharedPreferences.getInstance;
 
   static const String _apiKeyKey = 'gemini_api_key';
   static const String _includeMicKey = 'include_microphone';

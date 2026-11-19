@@ -41,7 +41,8 @@ class SettingsPanel extends StatefulWidget {
     bool includeMicrophone,
     bool showTranslation,
     String targetLanguageCode,
-  ) onSave;
+  )
+  onSave;
 
   /// Called when the user removes the stored key.
   final VoidCallback onRemove;
@@ -75,8 +76,7 @@ class _SettingsPanelState extends State<SettingsPanel> {
 
   void _onTextChanged() => setState(() {});
 
-  bool get _canSave =>
-      _controller.text.trim().isNotEmpty || widget.hasSavedKey;
+  bool get _canSave => _controller.text.trim().isNotEmpty || widget.hasSavedKey;
 
   void _save() {
     if (!_canSave) return;
@@ -338,10 +338,7 @@ class _PanelButton extends StatelessWidget {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
-          textStyle: const TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
-          ),
+          textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
         ),
         child: Text(label),
       ),

@@ -37,15 +37,12 @@ class GeminiLiveService {
   });
 
   /// Speech-to-text only model.
-  static const String modelTranscribe =
-      'gemini-3.5-transcribe-live-preview';
+  static const String modelTranscribe = 'gemini-3.5-transcribe-live-preview';
 
   /// Model that performs live speech translation directly.
-  static const String modelLiveTranslate =
-      'gemini-3.5-live-translate-preview';
+  static const String modelLiveTranslate = 'gemini-3.5-live-translate-preview';
 
-  static const String _host =
-      'wss://generativelanguage.googleapis.com';
+  static const String _host = 'wss://generativelanguage.googleapis.com';
   static const String _path =
       '/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent';
 
@@ -277,7 +274,8 @@ class GeminiLiveService {
 
     final error = decoded['error'];
     if (error is Map) {
-      final message = error['message']?.toString() ??
+      final message =
+          error['message']?.toString() ??
           'Gemini API returned an unknown error.';
       _emitError(message);
       return;
@@ -363,7 +361,9 @@ class GeminiLiveService {
   Duration _backoffFor(int attempt) {
     final seconds = 1 << (attempt - 1);
     return Duration(
-      seconds: seconds > _maxBackoff.inSeconds ? _maxBackoff.inSeconds : seconds,
+      seconds: seconds > _maxBackoff.inSeconds
+          ? _maxBackoff.inSeconds
+          : seconds,
     );
   }
 
@@ -420,10 +420,7 @@ class GeminiLiveService {
     // Drop standalone French filler words (conservative list to avoid eating
     // meaningful vocabulary such as "bon" or "voilà").
     text = text.replaceAll(
-      RegExp(
-        r'\b(?:euh+|heu+|hum+|hmm+|bah|ben|hein)\b',
-        caseSensitive: false,
-      ),
+      RegExp(r'\b(?:euh+|heu+|hum+|hmm+|bah|ben|hein)\b', caseSensitive: false),
       ' ',
     );
 
