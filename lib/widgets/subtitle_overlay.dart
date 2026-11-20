@@ -35,6 +35,8 @@ class _SubtitleOverlayState extends State<SubtitleOverlay> {
 
   StreamSubscription<String>? _subtitleSub;
   StreamSubscription<String>? _translationSub;
+  StreamSubscription<String>? _interimSubtitleSub;
+  StreamSubscription<String>? _interimTranslationSub;
   StreamSubscription<GeminiLiveState>? _stateSub;
   StreamSubscription<String>? _errorSub;
   StreamSubscription<Uint8List>? _audioSub;
@@ -50,6 +52,8 @@ class _SubtitleOverlayState extends State<SubtitleOverlay> {
   String _targetLanguageCode = defaultTargetLanguageCode;
   String _subtitle = '';
   String _translation = '';
+  String _interimSubtitle = '';
+  String _interimTranslation = '';
   String? _errorMessage;
   GeminiLiveState _connectionState = GeminiLiveState.disconnected;
 
@@ -67,6 +71,14 @@ class _SubtitleOverlayState extends State<SubtitleOverlay> {
       if (!mounted) return;
       setState(() => _translation = _appendSubtitle(_translation, text));
     });
+    _interimSubtitleSub = _gemini.interimSubtitleStream.listen((text) {
+      if (!mounted) return;
+      setState(() => _interimSubtitle = text);
+    });
+    _interimTranslationSub = _gemini.interimTranslationStream.listen((text) {
+      if (!mounted) return;
+      setState(() => _interimTranslation = text);
+    });
     _stateSub = _gemini.stateStream.listen((state) {
       if (!mounted) return;
       setState(() => _connectionState = state);
@@ -83,6 +95,8 @@ class _SubtitleOverlayState extends State<SubtitleOverlay> {
   void dispose() {
     _subtitleSub?.cancel();
     _translationSub?.cancel();
+    _interimSubtitleSub?.cancel();
+    _interimTranslationSub?.cancel();
     _stateSub?.cancel();
     _errorSub?.cancel();
     unawaited(_stopCapture());
@@ -135,6 +149,8 @@ class _SubtitleOverlayState extends State<SubtitleOverlay> {
       _errorMessage = null;
       _subtitle = '';
       _translation = '';
+      _interimSubtitle = '';
+      _interimTranslation = '';
     });
 
     await _gemini.connect(
@@ -320,14 +336,22 @@ class _SubtitleOverlayState extends State<SubtitleOverlay> {
     }
   }
 
+  String get _displaySubtitle => _interimSubtitle.isEmpty
+      ? _subtitle
+      : _appendSubtitle(_subtitle, _interimSubtitle);
+
+  String get _displayTranslation => _interimTranslation.isEmpty
+      ? _translation
+      : _appendSubtitle(_translation, _interimTranslation);
+
   String get _message {
-    if (_subtitle.isNotEmpty) return _subtitle;
+    if (_displaySubtitle.isNotEmpty) return _displaySubtitle;
     if (_errorMessage != null) return _errorMessage!;
     if (_isListening) return 'Listening for subtitles…';
     return 'Add your Gemini API key in Settings';
   }
 
-  bool get _messageIsError => _subtitle.isEmpty && _errorMessage != null;
+  bool get _messageIsError => _displaySubtitle.isEmpty && _errorMessage != null;
 
   @override
   Widget build(BuildContext context) {
@@ -394,6 +418,7 @@ class _SubtitleOverlayState extends State<SubtitleOverlay> {
                             statusColor: _statusColor,
                             message: _message,
                             isError: _messageIsError,
+                            isInterim: _interimSubtitle.isNotEmpty,
                           ),
                         ),
                         const SizedBox(width: 14),
@@ -432,7 +457,10 @@ class _SubtitleOverlayState extends State<SubtitleOverlay> {
                           color: Colors.white.withOpacity(0.08),
                         ),
                       ),
-                      child: _TranslationText(text: _translation),
+                      child: _TranslationText(
+                        text: _displayTranslation,
+                        isInterim: _interimTranslation.isNotEmpty,
+                      ),
                     ),
                   ],
                 ],
@@ -515,12 +543,14 @@ class _SubtitleText extends StatefulWidget {
     required this.statusColor,
     required this.message,
     required this.isError,
+    this.isInterim = false,
   });
 
   final String statusLabel;
   final Color statusColor;
   final String message;
   final bool isError;
+  final bool isInterim;
 
   @override
   State<_SubtitleText> createState() => _SubtitleTextState();
@@ -609,9 +639,14 @@ class _SubtitleTextState extends State<_SubtitleText> {
             child: Text(
               widget.message,
               style: TextStyle(
-                color: widget.isError ? const Color(0xFFFF8A80) : Colors.white,
+                color: widget.isError
+                    ? const Color(0xFFFF8A80)
+                    : Colors.white.withOpacity(widget.isInterim ? 0.82 : 1),
                 fontSize: 18,
                 fontWeight: FontWeight.w500,
+                fontStyle: widget.isInterim
+                    ? FontStyle.italic
+                    : FontStyle.normal,
                 height: 1.25,
               ),
             ),
@@ -624,9 +659,10 @@ class _SubtitleTextState extends State<_SubtitleText> {
 
 /// Single-line, auto-scrolling view of the translated text.
 class _TranslationText extends StatefulWidget {
-  const _TranslationText({required this.text});
+  const _TranslationText({required this.text, this.isInterim = false});
 
   final String text;
+  final bool isInterim;
 
   @override
   State<_TranslationText> createState() => _TranslationTextState();
@@ -688,9 +724,13 @@ class _TranslationTextState extends State<_TranslationText> {
           style: TextStyle(
             color: hasText
                 ? const Color(0xFFB8F5C8)
+                      .withOpacity(widget.isInterim ? 0.82 : 1)
                 : Colors.white.withOpacity(0.4),
             fontSize: 15,
             fontWeight: FontWeight.w500,
+            fontStyle: hasText && widget.isInterim
+                ? FontStyle.italic
+                : FontStyle.normal,
             height: 1.3,
           ),
         ),

@@ -46,11 +46,40 @@ class _FakeApiKeyStore extends ApiKeyStore {
 class _FakeGeminiLiveService extends GeminiLiveService {
   final StreamController<GeminiLiveState> _states =
       StreamController<GeminiLiveState>.broadcast();
+  final StreamController<String> _subtitles =
+      StreamController<String>.broadcast();
+  final StreamController<String> _translations =
+      StreamController<String>.broadcast();
+  final StreamController<String> _interimSubtitles =
+      StreamController<String>.broadcast();
+  final StreamController<String> _interimTranslations =
+      StreamController<String>.broadcast();
 
   String? connectedTargetLanguageCode;
+  String? connectedModel;
 
   @override
   Stream<GeminiLiveState> get stateStream => _states.stream;
+
+  @override
+  Stream<String> get subtitleStream => _subtitles.stream;
+
+  @override
+  Stream<String> get translationStream => _translations.stream;
+
+  @override
+  Stream<String> get interimSubtitleStream => _interimSubtitles.stream;
+
+  @override
+  Stream<String> get interimTranslationStream => _interimTranslations.stream;
+
+  void emitSubtitle(String text) => _subtitles.add(text);
+
+  void emitTranslation(String text) => _translations.add(text);
+
+  void emitInterimSubtitle(String text) => _interimSubtitles.add(text);
+
+  void emitInterimTranslation(String text) => _interimTranslations.add(text);
 
   @override
   Future<void> connect(
@@ -59,6 +88,7 @@ class _FakeGeminiLiveService extends GeminiLiveService {
     String? targetLanguageCode,
   }) async {
     connectedTargetLanguageCode = targetLanguageCode;
+    connectedModel = modelForMode(showTranslation);
   }
 
   @override
@@ -67,6 +97,10 @@ class _FakeGeminiLiveService extends GeminiLiveService {
   @override
   Future<void> dispose() async {
     await _states.close();
+    await _subtitles.close();
+    await _translations.close();
+    await _interimSubtitles.close();
+    await _interimTranslations.close();
   }
 }
 
@@ -255,5 +289,84 @@ void main() {
       find.byKey(const ValueKey('target-language-dropdown')),
       findsOneWidget,
     );
+  });
+
+  testWidgets('interim source text is replaced by final text', (
+    WidgetTester tester,
+  ) async {
+    final store = _FakeApiKeyStore()..key = 'saved-key';
+    final gemini = _FakeGeminiLiveService();
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: SubtitleOverlay(keyStore: store, gemini: gemini),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(gemini.connectedModel, 'models/gemini-3.5-transcribe-live-preview');
+
+    gemini.emitInterimSubtitle('Hello wor');
+    await tester.pumpAndSettle();
+    expect(find.text('Hello wor'), findsOneWidget);
+
+    gemini.emitInterimSubtitle('');
+    gemini.emitSubtitle('Hello world');
+    await tester.pumpAndSettle();
+
+    expect(find.text('Hello wor'), findsNothing);
+    expect(find.text('Hello world'), findsOneWidget);
+  });
+
+  testWidgets('interim translation is replaced by final translation', (
+    WidgetTester tester,
+  ) async {
+    final store = _FakeApiKeyStore()
+      ..key = 'saved-key'
+      ..showTranslation = true;
+    final gemini = _FakeGeminiLiveService();
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: SubtitleOverlay(keyStore: store, gemini: gemini),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(gemini.connectedModel, 'models/gemini-3.5-live-translate-preview');
+
+    gemini.emitInterimTranslation('Bonjour le mon');
+    await tester.pumpAndSettle();
+    expect(find.text('Bonjour le mon'), findsOneWidget);
+
+    gemini.emitInterimTranslation('');
+    gemini.emitTranslation('Bonjour le monde');
+    await tester.pumpAndSettle();
+
+    expect(find.text('Bonjour le mon'), findsNothing);
+    expect(find.text('Bonjour le monde'), findsOneWidget);
+  });
+
+  test('model constants remain unchanged and switch by mode', () async {
+    final service = GeminiLiveService();
+
+    expect(
+      GeminiLiveService.modelTranscribe,
+      'gemini-3.5-transcribe-live-preview',
+    );
+    expect(
+      GeminiLiveService.modelLiveTranslate,
+      'gemini-3.5-live-translate-preview',
+    );
+    expect(
+      service.modelForMode(false),
+      'models/gemini-3.5-transcribe-live-preview',
+    );
+    expect(
+      service.modelForMode(true),
+      'models/gemini-3.5-live-translate-preview',
+    );
+
+    await service.dispose();
   });
 }

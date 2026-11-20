@@ -31,7 +31,7 @@ enum GeminiLiveState {
 /// cleaned French subtitle text.
 class GeminiLiveService {
   GeminiLiveService({
-    this.model = modelLiveTranslate,
+    this.modelOverride,
     this.targetLanguageCode = 'fr',
     this.connectTimeout = const Duration(seconds: 15),
   });
@@ -49,8 +49,8 @@ class GeminiLiveService {
   static const int _maxReconnectAttempts = 5;
   static const Duration _maxBackoff = Duration(seconds: 30);
 
-  /// The model identifier sent in the setup frame.
-  final String model;
+  /// Optional explicit model identifier. Mode selection is used when absent.
+  final String? modelOverride;
 
   /// BCP-47 code of the language to translate subtitles into.
   String targetLanguageCode;
@@ -61,6 +61,10 @@ class GeminiLiveService {
   final StreamController<String> _subtitleController =
       StreamController<String>.broadcast();
   final StreamController<String> _translationController =
+      StreamController<String>.broadcast();
+  final StreamController<String> _interimSubtitleController =
+      StreamController<String>.broadcast();
+  final StreamController<String> _interimTranslationController =
       StreamController<String>.broadcast();
   final StreamController<GeminiLiveState> _stateController =
       StreamController<GeminiLiveState>.broadcast();
@@ -86,6 +90,13 @@ class GeminiLiveService {
   /// enabled for the active connection.
   Stream<String> get translationStream => _translationController.stream;
 
+  /// Low-latency provisional source text, replaced by [subtitleStream].
+  Stream<String> get interimSubtitleStream => _interimSubtitleController.stream;
+
+  /// Low-latency provisional translated text, replaced by [translationStream].
+  Stream<String> get interimTranslationStream =>
+      _interimTranslationController.stream;
+
   /// Emits whenever the connection lifecycle state changes.
   Stream<GeminiLiveState> get stateStream => _stateController.stream;
 
@@ -97,6 +108,17 @@ class GeminiLiveService {
 
   /// Whether audio can currently be sent to the server.
   bool get isConnected => _state == GeminiLiveState.connected;
+
+  /// Model identifier used by the current mode.
+  String get activeModel => modelForMode(_showTranslation);
+
+  /// Resolves the unchanged model constants for [showTranslation].
+  String modelForMode(bool showTranslation) {
+    final model =
+        modelOverride ??
+        (showTranslation ? modelLiveTranslate : modelTranscribe);
+    return model.startsWith('models/') ? model : 'models/$model';
+  }
 
   /// The most recent error message, if any.
   String? get lastError => _lastError;
@@ -169,6 +191,8 @@ class GeminiLiveService {
     await disconnect();
     await _subtitleController.close();
     await _translationController.close();
+    await _interimSubtitleController.close();
+    await _interimTranslationController.close();
     await _stateController.close();
     await _errorController.close();
   }
@@ -178,6 +202,7 @@ class GeminiLiveService {
     _opening = true;
 
     await _teardownSocket();
+    _clearInterim();
 
     final apiKey = _apiKey;
     if (apiKey == null || _manuallyClosed) {
@@ -222,11 +247,8 @@ class GeminiLiveService {
   }
 
   void _sendSetup() {
-    // Always use the translation-capable model: it exposes both the source
-    // transcription and the translated transcription, and we simply pick which
-    // one to display based on the user's preference.
-    final resolvedModel = model.startsWith('models/') ? model : 'models/$model';
-    final isTranslate = resolvedModel.contains('translate');
+    final resolvedModel = activeModel;
+    final isTranslate = _showTranslation;
 
     final generationConfig = <String, dynamic>{
       'responseModalities': isTranslate ? ['AUDIO'] : ['TEXT'],
@@ -284,22 +306,34 @@ class GeminiLiveService {
     final serverContent = decoded['serverContent'];
     if (serverContent is! Map) return;
 
-    // The source transcription always drives the main subtitle box. When
-    // translation is enabled, the translated stream feeds the dedicated
-    // translation box, so the two never mix or duplicate each other.
+    // Interim text is emitted immediately as a provisional value. A final
+    // transcript clears that provisional value before appending the final
+    // chunk, so the UI never shows both versions at once.
     final source = _cleanDisfluencies(
       _transcriptText(serverContent['inputTranscription']),
     );
+    final interimSource = _cleanDisfluencies(
+      _transcriptText(serverContent['interimInputTranscription']),
+    );
     if (source.isNotEmpty) {
+      _emitInterim(_interimSubtitleController, '');
       _subtitleController.add(source);
+    } else if (interimSource.isNotEmpty) {
+      _emitInterim(_interimSubtitleController, interimSource);
     }
 
     if (_showTranslation) {
       final translated = _cleanDisfluencies(
         _transcriptText(serverContent['outputTranscription']),
       );
+      final interimTranslated = _cleanDisfluencies(
+        _transcriptText(serverContent['interimOutputTranscription']),
+      );
       if (translated.isNotEmpty) {
+        _emitInterim(_interimTranslationController, '');
         _translationController.add(translated);
+      } else if (interimTranslated.isNotEmpty) {
+        _emitInterim(_interimTranslationController, interimTranslated);
       }
     }
   }
@@ -308,6 +342,17 @@ class GeminiLiveService {
     if (transcription is! Map) return '';
     final text = transcription['text'];
     return text is String ? text : '';
+  }
+
+  void _emitInterim(StreamController<String> controller, String text) {
+    if (!controller.isClosed) {
+      controller.add(text);
+    }
+  }
+
+  void _clearInterim() {
+    _emitInterim(_interimSubtitleController, '');
+    _emitInterim(_interimTranslationController, '');
   }
 
   void _handleSocketError(Object error) {
