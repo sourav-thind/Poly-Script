@@ -37,7 +37,7 @@ class GeminiLiveService {
   });
 
   /// Speech-to-text only model.
-  static const String modelTranscribe = 'gemini-3.5-transcribe-live-preview';
+  static const String modelTranscribe = 'gemini-3.5-transcribe-live';
 
   /// Model that performs live speech translation directly.
   static const String modelLiveTranslate = 'gemini-3.5-live-translate-preview';

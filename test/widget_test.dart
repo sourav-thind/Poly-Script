@@ -304,7 +304,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(gemini.connectedModel, 'models/gemini-3.5-transcribe-live-preview');
+    expect(gemini.connectedModel, 'models/gemini-3.5-transcribe-live');
 
     gemini.emitInterimSubtitle('Hello wor');
     await tester.pumpAndSettle();
@@ -350,18 +350,12 @@ void main() {
   test('model constants remain unchanged and switch by mode', () async {
     final service = GeminiLiveService();
 
-    expect(
-      GeminiLiveService.modelTranscribe,
-      'gemini-3.5-transcribe-live-preview',
-    );
+    expect(GeminiLiveService.modelTranscribe, 'gemini-3.5-transcribe-live');
     expect(
       GeminiLiveService.modelLiveTranslate,
       'gemini-3.5-live-translate-preview',
     );
-    expect(
-      service.modelForMode(false),
-      'models/gemini-3.5-transcribe-live-preview',
-    );
+    expect(service.modelForMode(false), 'models/gemini-3.5-transcribe-live');
     expect(
       service.modelForMode(true),
       'models/gemini-3.5-live-translate-preview',
