@@ -34,8 +34,10 @@ Future<void> main() async {
   await windowManager.setResizable(true);
 
   // Place it near the bottom of the current display.
-  final bottomPosition =
-      await calcWindowPosition(_kWindowSize, Alignment.bottomCenter);
+  final bottomPosition = await calcWindowPosition(
+    _kWindowSize,
+    Alignment.bottomCenter,
+  );
   await windowManager.setPosition(
     Offset(bottomPosition.dx, bottomPosition.dy - _kBottomMargin),
   );

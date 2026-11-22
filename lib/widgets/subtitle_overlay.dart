@@ -383,104 +383,106 @@ class _SubtitleOverlayState extends State<SubtitleOverlay> {
       view = Scaffold(
         backgroundColor: Colors.transparent,
         body: Stack(
-        children: [
-          Center(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 14,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.75),
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: Colors.white.withOpacity(0.08)),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.35),
-                          blurRadius: 24,
-                          offset: const Offset(0, 8),
-                        ),
-                      ],
-                    ),
-                    child: Row(
-                      children: [
-                        const _DragHandle(),
-                        const SizedBox(width: 14),
-                        Expanded(
-                          child: _SubtitleText(
-                            statusLabel: _statusLabel,
-                            statusColor: _statusColor,
-                            message: _message,
-                            isError: _messageIsError,
-                            isInterim: _interimSubtitle.isNotEmpty,
-                          ),
-                        ),
-                        const SizedBox(width: 14),
-                        IconButton(
-                          tooltip: 'Settings',
-                          onPressed: () => unawaited(_openSettings()),
-                          icon: const Icon(
-                            Icons.settings,
-                            size: 20,
-                            color: Colors.white70,
-                          ),
-                        ),
-                        IconButton(
-                          tooltip: 'Close',
-                          onPressed: () => unawaited(windowManager.close()),
-                          icon: const Icon(
-                            Icons.close,
-                            size: 20,
-                            color: Colors.white70,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  if (_showTranslation) ...[
-                    const SizedBox(height: 6),
+          children: [
+            Center(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
                     Container(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 16,
-                        vertical: 8,
+                        vertical: 14,
                       ),
                       decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.6),
-                        borderRadius: BorderRadius.circular(8),
+                        color: Colors.black.withOpacity(0.75),
+                        borderRadius: BorderRadius.circular(10),
                         border: Border.all(
                           color: Colors.white.withOpacity(0.08),
                         ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.35),
+                            blurRadius: 24,
+                            offset: const Offset(0, 8),
+                          ),
+                        ],
                       ),
-                      child: _TranslationText(
-                        text: _displayTranslation,
-                        isInterim: _interimTranslation.isNotEmpty,
+                      child: Row(
+                        children: [
+                          const _DragHandle(),
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: _SubtitleText(
+                              statusLabel: _statusLabel,
+                              statusColor: _statusColor,
+                              message: _message,
+                              isError: _messageIsError,
+                              isInterim: _interimSubtitle.isNotEmpty,
+                            ),
+                          ),
+                          const SizedBox(width: 14),
+                          IconButton(
+                            tooltip: 'Settings',
+                            onPressed: () => unawaited(_openSettings()),
+                            icon: const Icon(
+                              Icons.settings,
+                              size: 20,
+                              color: Colors.white70,
+                            ),
+                          ),
+                          IconButton(
+                            tooltip: 'Close',
+                            onPressed: () => unawaited(windowManager.close()),
+                            icon: const Icon(
+                              Icons.close,
+                              size: 20,
+                              color: Colors.white70,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
+                    if (_showTranslation) ...[
+                      const SizedBox(height: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 8,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withOpacity(0.6),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: Colors.white.withOpacity(0.08),
+                          ),
+                        ),
+                        child: _TranslationText(
+                          text: _displayTranslation,
+                          isInterim: _interimTranslation.isNotEmpty,
+                        ),
+                      ),
+                    ],
                   ],
-                ],
+                ),
               ),
             ),
-          ),
-          Positioned(
-            top: 8,
-            left: 14,
-            child: _ModeBadge(showTranslation: _showTranslation),
-          ),
-        ],
-      ),
+            Positioned(
+              top: 8,
+              left: 14,
+              child: _ModeBadge(showTranslation: _showTranslation),
+            ),
+          ],
+        ),
       );
     }
 
-    return DragToResizeArea(
-      resizeEdgeSize: 8,
-      child: view,
-    );
+    return DragToResizeArea(resizeEdgeSize: 8, child: view);
   }
 }
 
