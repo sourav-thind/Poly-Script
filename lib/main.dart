@@ -6,6 +6,7 @@ import 'package:window_manager/legacy.dart';
 import 'widgets/subtitle_overlay.dart';
 
 const Size _kWindowSize = Size(800, 160);
+const Size _kMinimumWindowSize = Size(420, 160);
 const double _kBottomMargin = 48;
 
 Future<void> main() async {
@@ -28,10 +29,9 @@ Future<void> main() async {
   await windowManager.setAlwaysOnTop(true);
   await windowManager.setBackgroundColor(Colors.transparent);
 
-  // Lock the window to a fixed 800x160 size.
-  await windowManager.setMinimumSize(_kWindowSize);
-  await windowManager.setMaximumSize(_kWindowSize);
-  await windowManager.setResizable(false);
+  await windowManager.setMinimumSize(_kMinimumWindowSize);
+  await windowManager.setMaximumSize(Size.zero);
+  await windowManager.setResizable(true);
 
   // Place it near the bottom of the current display.
   final bottomPosition =
