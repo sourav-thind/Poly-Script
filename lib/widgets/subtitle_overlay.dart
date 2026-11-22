@@ -355,8 +355,9 @@ class _SubtitleOverlayState extends State<SubtitleOverlay> {
 
   @override
   Widget build(BuildContext context) {
+    final Widget view;
     if (_isSettingsOpen) {
-      return Scaffold(
+      view = Scaffold(
         backgroundColor: Colors.transparent,
         body: Center(
           child: SettingsPanel(
@@ -378,11 +379,10 @@ class _SubtitleOverlayState extends State<SubtitleOverlay> {
           ),
         ),
       );
-    }
-
-    return Scaffold(
-      backgroundColor: Colors.transparent,
-      body: Stack(
+    } else {
+      view = Scaffold(
+        backgroundColor: Colors.transparent,
+        body: Stack(
         children: [
           Center(
             child: Padding(
@@ -474,6 +474,12 @@ class _SubtitleOverlayState extends State<SubtitleOverlay> {
           ),
         ],
       ),
+      );
+    }
+
+    return DragToResizeArea(
+      resizeEdgeSize: 8,
+      child: view,
     );
   }
 }
