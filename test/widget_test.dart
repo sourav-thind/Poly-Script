@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:window_manager/legacy.dart' show DragToResizeArea;
 
 import 'package:poly_cript/services/api_key_store.dart';
 import 'package:poly_cript/services/gemini_live_service.dart';
@@ -345,6 +346,24 @@ void main() {
 
     expect(find.text('Bonjour le mon'), findsNothing);
     expect(find.text('Bonjour le monde'), findsOneWidget);
+  });
+
+  testWidgets('overlay exposes cursor-driven resize handles', (
+    WidgetTester tester,
+  ) async {
+    final store = _FakeApiKeyStore()..key = 'saved-key';
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: SubtitleOverlay(
+          keyStore: store,
+          gemini: _FakeGeminiLiveService(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byType(DragToResizeArea), findsOneWidget);
   });
 
   test('model constants remain unchanged and switch by mode', () async {
